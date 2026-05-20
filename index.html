@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pre-Match Meeting Builder ⚽</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #0d1117; --bg2: #161b22; --bg3: #1c2128; --border: #30363d;
+  --green:  #1db954; --blue: #388bfd; --red: #f85149; --yellow: #e3b341;
+  --purple: #bc8cff; --teal: #2ea89e; --orange: #f78166;
+  --white:  #ffffff; --gray: #8b949e; --dgray: #6e7681; --light: #c9d1d9;
+  --card-r: 8px;
+}
+html { font-size: 15px; scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--light); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+/* ── Layout ── */
+.app-header {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 12px 24px; display: flex; align-items: center; gap: 16px;
+  position: sticky; top: 0; z-index: 100;
+}
+.app-header h1 { font-size: 1.1rem; font-weight: 700; color: var(--white); }
+.badge { background: var(--green); color: #000; font-size: 0.68rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; letter-spacing: 0.05em; }
+.header-right { margin-left: auto; display: flex; gap: 10px; }
+.container { display: flex; min-height: calc(100vh - 56px); }
+
+.sidebar {
+  width: 200px; flex-shrink: 0; background: var(--bg2);
+  border-right: 1px solid var(--border); padding: 20px 0;
+  position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto;
+}
+.nav-section { padding: 6px 16px; font-size: 0.62rem; font-weight: 700; color: var(--dgray); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 12px; }
+.nav-item { display: block; padding: 8px 20px; font-size: 0.82rem; color: var(--gray); cursor: pointer; border-left: 3px solid transparent; text-decoration: none; transition: all 0.15s; }
+.nav-item:hover { color: var(--white); background: var(--bg3); }
+.nav-item.active { color: var(--white); border-left-color: var(--green); background: var(--bg3); }
+
+.main { flex: 1; padding: 28px 32px; max-width: 1000px; }
+
+/* ── Section headers ── */
+.section { margin-bottom: 36px; }
+.section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 10px; border-bottom: 2px solid var(--border); }
+.section-header .num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+.section-header h2 { font-size: 1rem; font-weight: 700; color: var(--white); }
+.accent-line { flex: 1; height: 1px; background: var(--border); }
+
+/* ── Cards ── */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 18px; margin-bottom: 14px; transition: opacity 0.2s; }
+.card.skipped { opacity: 0.45; }
+.card.skipped .card-body { display: none; }
+
+.card-title {
+  font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--gray); margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card.skipped .card-title { margin-bottom: 0; }
+.card-title .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.card-title .spacer { flex: 1; }
+
+/* ── Skip button ── */
+.skip-btn {
+  background: none; border: 1px solid var(--border); color: var(--dgray);
+  border-radius: 5px; padding: 2px 9px; font-size: 0.68rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap; font-family: inherit; letter-spacing: 0.03em;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.skip-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+.card.skipped .skip-btn { border-color: var(--teal); color: var(--teal); }
+.skipped-badge { font-size: 0.7rem; color: var(--dgray); font-style: italic; font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 4px; }
+
+/* ── Form ── */
+label { display: block; font-size: 0.8rem; color: var(--gray); margin-bottom: 5px; }
+input[type="text"], input[type="date"], input[type="number"], textarea, select {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 12px; color: var(--light); font-size: 0.875rem;
+  font-family: inherit; transition: border-color 0.15s; outline: none;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--green); }
+textarea { resize: vertical; min-height: 80px; }
+select option { background: var(--bg2); }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* ── Bullet lists ── */
+.bullet-list { list-style: none; }
+.bullet-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.bullet-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.bullet-item input { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; color: var(--light); font-size: 0.85rem; width: auto; }
+.remove-btn { background: none; border: none; color: var(--dgray); cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px; transition: color 0.15s; }
+.remove-btn:hover { color: var(--red); }
+.add-btn { background: none; border: 1px dashed var(--border); border-radius: 6px; color: var(--gray); padding: 6px 14px; font-size: 0.8rem; cursor: pointer; width: 100%; transition: all 0.15s; margin-top: 4px; font-family: inherit; }
+.add-btn:hover { border-color: var(--green); color: var(--green); }
+
+/* ── Buttons ── */
+.btn { padding: 8px 18px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; font-family: inherit; }
+.btn-secondary { background: var(--bg3); color: var(--light); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--gray); color: var(--white); }
+.btn-danger { background: none; border: 1px solid var(--border); color: var(--gray); }
+.btn-danger:hover { border-color: var(--red); color: var(--red); }
+.btn-blue { background: var(--blue); color: var(--white); }
+.btn-blue:hover { background: #4d9fff; }
+
+/* ── Game info ── */
+.game-info-strip { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 16px 20px; margin-bottom: 28px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+
+/* ── Key players ── */
+.kp-row { display: grid; grid-template-columns: 50px 1fr 80px 2fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+
+/* ── Direct comp ── */
+.dc-row { display: grid; grid-template-columns: 130px 80px 80px 80px 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+
+/* ── Tactics field ── */
+.field-wrap { display: flex; gap: 24px; align-items: flex-start; }
+.field-container { position: relative; flex-shrink: 0; }
+#tacticsField { display: block; }
+.field-controls { flex: 1; overflow-y: auto; max-height: 420px; }
+
+/* ── Position inputs ── */
+.position-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.pos-input-wrap { display: flex; flex-direction: column; gap: 3px; }
+.pos-label { font-size: 0.68rem; font-weight: 700; color: var(--dgray); text-transform: uppercase; letter-spacing: 0.05em; }
+.pos-input-row { display: flex; gap: 5px; }
+.pos-nr { width: 52px !important; flex-shrink: 0; padding: 5px 6px !important; font-size: 0.8rem !important; text-align: center; }
+.pos-name { flex: 1; padding: 5px 8px !important; font-size: 0.8rem !important; }
+
+/* ── Pressing ── */
+.pressing-section { margin-top: 16px; }
+.pressing-label { font-size: 0.8rem; color: var(--gray); margin-bottom: 8px; }
+input[type="range"] { width: 100%; height: 6px; background: var(--border); border-radius: 3px; outline: none; border: none; -webkit-appearance: none; cursor: pointer; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--red); cursor: pointer; border: 2px solid var(--white); }
+.press-zones { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 14px; }
+.press-zone-item { text-align: center; padding: 6px 4px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; }
+.press-zone-item.active { border-color: var(--white); }
+
+/* ── Bench ── */
+.bench-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.bench-player { display: flex; align-items: center; gap: 5px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; }
+.bench-nr-input { width: 42px !important; background: none !important; border: none !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important; padding: 0 4px !important; font-size: 0.8rem !important; color: var(--dgray) !important; text-align: center; }
+.bench-nr-input:focus { border-bottom-color: var(--blue) !important; color: var(--light) !important; }
+.bench-player .name-input { background: none; border: none; padding: 0 4px; width: 120px; font-size: 0.82rem; color: var(--light); outline: none; }
+.bench-player .remove-btn { font-size: 0.8rem; padding: 0 2px; }
+.bench-sep { color: var(--border); font-size: 0.8rem; }
+
+/* ── Misc ── */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.hint { font-size: 0.78rem; color: var(--dgray); margin-top: 4px; font-style: italic; }
+.flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* ── Print ── */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { background: #fff !important; color: #111 !important; font-size: 11pt; }
+  .app-header, .sidebar, .no-print { display: none !important; }
+  .container { display: block; }
+  .main { padding: 0; max-width: 100%; }
+  .section { page-break-inside: avoid; margin-bottom: 16pt; }
+  .card { border: 1px solid #ccc !important; background: #f8f8f8 !important; }
+  .card.skipped { display: none !important; }
+  .section-header { border-bottom: 2pt solid #333 !important; }
+  .section-header h2 { color: #000 !important; }
+  input, textarea, select { border: none !important; background: transparent !important; color: #000 !important; padding: 0 !important; }
+  .add-btn, .remove-btn, .skip-btn, .btn, .bench-player .remove-btn { display: none !important; }
+  .game-info-strip { background: #f0f0f0 !important; border: 1px solid #ccc !important; }
+  .field-controls { max-height: none !important; overflow: visible !important; }
+  .pos-nr { color: #000 !important; }
+  .bench-nr-input { color: #000 !important; border-bottom: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header no-print">
+  <span class="badge">⚽</span>
+  <h1>Pre-Match Meeting Builder</h1>
+  <div class="header-right">
+    <button class="btn btn-secondary" onclick="clearAll()">🗑 Leeren</button>
+    <button class="btn btn-secondary" onclick="saveData()">💾 Speichern</button>
+    <button class="btn btn-blue" onclick="exportPDF()">📄 PDF exportieren</button>
+  </div>
+</header>
+
+<div class="container">
+  <nav class="sidebar no-print">
+    <div class="nav-section">Spielinfo</div>
+    <a class="nav-item active" onclick="navTo('game-info',this)">📅 Spielinfo</a>
+    <div class="nav-section">Block 1</div>
+    <a class="nav-item" onclick="navTo('analyse',this)">📊 Analyse letztes Spiel</a>
+    <a class="nav-item" onclick="navTo('gegner',this)">🔍 Gegneranalyse</a>
+    <div class="nav-section">Block 2</div>
+    <a class="nav-item" onclick="navTo('taktik',this)">🗺️ Aufstellung</a>
+    <a class="nav-item" onclick="navTo('pressing',this)">⬆️ Pressing & Spielweise</a>
+    <div class="nav-section">Block 3</div>
+    <a class="nav-item" onclick="navTo('motivation',this)">🔥 Motivation</a>
+  </nav>
+
+  <main class="main">
+
+    <!-- ── SPIELINFO ── -->
+    <div class="section" id="game-info">
+      <div class="section-header">
+        <div class="num" style="background:#1a3a1f;color:var(--green);">⚽</div>
+        <h2>Spielinformationen</h2><div class="accent-line"></div>
+      </div>
+      <div class="game-info-strip">
+        <div><label>Datum</label><input type="date" id="matchDate"></div>
+        <div><label>Gegner</label><input type="text" id="opponentName" placeholder="z.B. FC Bayern"></div>
+        <div><label>Wettbewerb</label><input type="text" id="competition" placeholder="z.B. Kreisliga A"></div>
+        <div><label>Heim / Auswärts</label><select id="homeAway"><option>Heim</option><option>Auswärts</option></select></div>
+        <div><label>Anstoßzeit</label><input type="text" id="kickoff" placeholder="15:30 Uhr"></div>
+      </div>
+    </div>
+
+    <!-- ── BLOCK 1: ANALYSE ── -->
+    <div class="section" id="analyse">
+      <div class="section-header">
+        <div class="num" style="background:#1a2a3a;color:var(--blue);">1</div>
+        <h2>Analyse — Letztes Spiel</h2><div class="accent-line"></div>
+      </div>
+
+      <div class="card" id="card-lastmatch">
+        <div class="card-title">
+          <div class="dot" style="background:var(--blue)"></div>Letztes Spiel
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-lastmatch')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <div class="grid-3">
+            <div><label>Gegner (letztes Spiel)</label><input type="text" id="lastOpponent" placeholder="z.B. SV Muster"></div>
+            <div><label>Ergebnis</label><input type="text" id="lastResult" placeholder="z.B. 2:1 (Sieg)"></div>
+            <div><label>Datum</label><input type="date" id="lastDate"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="card-good">
+        <div class="card-title">
+          <div class="dot" style="background:var(--green)"></div>Was lief gut? ✅
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-good')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <ul class="bullet-list" id="goodList"></ul>
+          <button class="add-btn" onclick="addBullet('goodList','var(--green)')">+ Punkt hinzufügen</button>
+        </div>
+      </div>
+
+      <div class="card" id="card-bad">
+        <div class="card-title">
+          <div class="dot" style="background:var(--red)"></div>Was lief nicht gut? ❌
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-bad')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <ul class="bullet-list" id="badList"></ul>
+          <button class="add-btn" onclick="addBullet('badList','var(--red)')">+ Punkt hinzufügen</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card" id="card-keep">
+          <div class="card-title">
+            <div class="dot" style="background:var(--teal)"></div>Was übernehmen wir? 👍
+            <span class="spacer"></span>
+            <button class="skip-btn" onclick="toggleSkip('card-keep')">Heute nicht</button>
+          </div>
+          <div class="card-body">
+            <ul class="bullet-list" id="keepList"></ul>
+            <button class="add-btn" onclick="addBullet('keepList','var(--teal)')">+ Punkt hinzufügen</button>
+          </div>
+        </div>
+        <div class="card" id="card-change">
+          <div class="card-title">
+            <div class="dot" style="background:var(--yellow)"></div>Was ändern wir? 🔄
+            <span class="spacer"></span>
+            <button class="skip-btn" onclick="toggleSkip('card-change')">Heute nicht</button>
+          </div>
+          <div class="card-body">
+            <ul class="bullet-list" id="changeList"></ul>
+            <button class="add-btn" onclick="addBullet('changeList','var(--yellow)')">+ Punkt hinzufügen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GEGNERANALYSE ── -->
+    <div class="section" id="gegner">
+      <div class="section-header">
+        <div class="num" style="background:#2e1a1a;color:var(--orange);">1b</div>
+        <h2>Gegneranalyse</h2><div class="accent-line"></div>
+      </div>
+
+      <div class="card" id="card-oppformation">
+        <div class="card-title">
+          <div class="dot" style="background:var(--orange)"></div>Formation & Grundordnung
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-oppformation')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <div class="grid-2">
+            <div>
+              <label>Formation Gegner</label>
+              <select id="opponentFormation">
+                <option>4-3-3</option><option>4-4-2</option><option>4-2-3-1</option>
+                <option>3-5-2</option><option>5-3-2</option><option>4-1-4-1</option>
+                <option>4-5-1</option><option>3-4-3</option><option>Andere</option>
+              </select>
+            </div>
+            <div><label>Spielstil</label><input type="text" id="opponentStyle" placeholder="z.B. Konter, Ballbesitz, Pressing..."></div>
+          </div>
+          <div style="margin-top:12px;">
+            <label>Taktische Spielweise / Besonderheiten</label>
+            <textarea id="opponentTactics" placeholder="Wie spielt der Gegner? Stärken, Muster, Aufbau..." rows="4"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="card-keyplayers">
+        <div class="card-title">
+          <div class="dot" style="background:var(--purple)"></div>Key Players 🌟
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-keyplayers')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:50px 1fr 80px 2fr auto;gap:8px;margin-bottom:6px;">
+            <span style="font-size:0.72rem;color:var(--dgray);text-align:center;">Nr.</span>
+            <span style="font-size:0.72rem;color:var(--dgray);">Name</span>
+            <span style="font-size:0.72rem;color:var(--dgray);">Position</span>
+            <span style="font-size:0.72rem;color:var(--dgray);">Gefahr / Besonderheit</span>
+            <span></span>
+          </div>
+          <div id="keyPlayersList"></div>
+          <button class="add-btn" onclick="addKeyPlayer()">+ Spieler hinzufügen</button>
+        </div>
+      </div>
+
+      <div class="card" id="card-directcomp">
+        <div class="card-title">
+          <div class="dot" style="background:var(--yellow)"></div>Letzte Spiele gegen diesen Gegner 📋
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-directcomp')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:130px 80px 80px 80px 1fr auto;gap:8px;margin-bottom:6px;">
+            <span style="font-size:0.72rem;color:var(--dgray);">Datum</span>
+            <span style="font-size:0.72rem;color:var(--dgray);">Ergebnis</span>
+            <span style="font-size:0.72rem;color:var(--dgray);">Ort</span>
+            <span style="font-size:0.72rem;color:var(--dgray);">Tendenz</span>
+            <span style="font-size:0.72rem;color:var(--dgray);">Notiz</span>
+            <span></span>
+          </div>
+          <div id="directCompList"></div>
+          <button class="add-btn" onclick="addDirectComp()">+ Spiel hinzufügen</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card" id="card-opstr">
+          <div class="card-title">
+            <div class="dot" style="background:var(--red)"></div>Stärken des Gegners ⚠️
+            <span class="spacer"></span>
+            <button class="skip-btn" onclick="toggleSkip('card-opstr')">Heute nicht</button>
+          </div>
+          <div class="card-body">
+            <ul class="bullet-list" id="opponentStrengths"></ul>
+            <button class="add-btn" onclick="addBullet('opponentStrengths','var(--red)')">+ Hinzufügen</button>
+          </div>
+        </div>
+        <div class="card" id="card-opweak">
+          <div class="card-title">
+            <div class="dot" style="background:var(--green)"></div>Schwächen / Räume 🎯
+            <span class="spacer"></span>
+            <button class="skip-btn" onclick="toggleSkip('card-opweak')">Heute nicht</button>
+          </div>
+          <div class="card-body">
+            <ul class="bullet-list" id="opponentWeaknesses"></ul>
+            <button class="add-btn" onclick="addBullet('opponentWeaknesses','var(--green)')">+ Hinzufügen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BLOCK 2: AUFSTELLUNG ── -->
+    <div class="section" id="taktik">
+      <div class="section-header">
+        <div class="num" style="background:#1a2e1a;color:var(--green);">2</div>
+        <h2>Taktische Ausrichtung — Aufstellung</h2><div class="accent-line"></div>
+      </div>
+
+      <div class="card" id="card-field">
+        <div class="card-title">
+          <div class="dot" style="background:var(--green)"></div>Formation & Spielfeld
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-field')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <div class="flex-row" style="margin-bottom:16px;gap:14px;">
+            <div>
+              <label>Unsere Formation</label>
+              <select id="ourFormation" onchange="updateField()">
+                <option value="4-3-3">4-3-3</option>
+                <option value="4-4-2">4-4-2</option>
+                <option value="4-2-3-1">4-2-3-1</option>
+                <option value="3-5-2">3-5-2</option>
+                <option value="4-5-1">4-5-1</option>
+                <option value="5-3-2">5-3-2</option>
+              </select>
+            </div>
+            <div class="hint" style="padding-top:18px;">Nr. = Trikotnummer · Name = Spieler · Pressinglinie unten einstellbar</div>
+          </div>
+          <div class="field-wrap">
+            <div class="field-container">
+              <canvas id="tacticsField" width="280" height="410"></canvas>
+            </div>
+            <div class="field-controls">
+              <div style="font-size:0.78rem;color:var(--gray);margin-bottom:4px;display:flex;gap:12px;align-items:center;">
+                <span>Startelf</span>
+                <span style="font-size:0.68rem;color:var(--dgray);">Nr. · Name</span>
+              </div>
+              <div class="position-grid" id="positionInputs"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="card-bench">
+        <div class="card-title">
+          <div class="dot" style="background:var(--blue)"></div>Ersatzspieler / Bank 🪑
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-bench')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <p class="hint" style="margin-bottom:8px;">Trikotnummer eingeben → Tab → Name</p>
+          <div class="bench-wrap" id="benchWrap"></div>
+          <button class="add-btn" style="margin-top:8px;" onclick="addBenchPlayer()">+ Spieler hinzufügen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PRESSING & SPIELWEISE ── -->
+    <div class="section" id="pressing">
+      <div class="section-header">
+        <div class="num" style="background:#2e1a1a;color:var(--red);">2b</div>
+        <h2>Pressing & Spielweise</h2><div class="accent-line"></div>
+      </div>
+
+      <div class="card" id="card-pressline">
+        <div class="card-title">
+          <div class="dot" style="background:var(--red)"></div>Pressinglinie ⬆️
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-pressline')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <div class="press-zones">
+            <div class="press-zone-item" style="background:#3a1a1a;color:var(--red);" onclick="setPressingZone(80)">Hohes Pressing<br><small>Gegnerhälfte</small></div>
+            <div class="press-zone-item" style="background:#3a2e1a;color:var(--yellow);" onclick="setPressingZone(50)">Mittelfeldpressing<br><small>ab Mittellinie</small></div>
+            <div class="press-zone-item" style="background:#1a3a1f;color:var(--green);" onclick="setPressingZone(25)">Tiefes Pressing<br><small>Eigene Hälfte</small></div>
+          </div>
+          <div class="pressing-section">
+            <div class="pressing-label"><span id="pressLabel">Pressinglinie: Mittelfeldpressing (ab Mittellinie)</span></div>
+            <input type="range" id="pressSlider" min="10" max="90" value="50" oninput="updatePressLine(this.value)">
+            <p class="hint" id="pressHint" style="margin-top:6px;">Der Gegner wird ab der Mittellinie unter Druck gesetzt.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="card-triggers">
+        <div class="card-title">
+          <div class="dot" style="background:var(--yellow)"></div>Pressing Trigger & Auslöser
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-triggers')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <ul class="bullet-list" id="pressTriggers"></ul>
+          <button class="add-btn" onclick="addBullet('pressTriggers','var(--yellow)')">+ Trigger hinzufügen</button>
+        </div>
+      </div>
+
+      <div class="card" id="card-spielweise">
+        <div class="card-title">
+          <div class="dot" style="background:var(--teal)"></div>Wie wollen wir spielen? 🎯
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-spielweise')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <div class="grid-2" style="margin-bottom:12px;">
+            <div>
+              <label>Spielausrichtung</label>
+              <select id="playStyle">
+                <option>Ballbesitz-orientiert</option><option>Direktspiel / schnell</option>
+                <option>Konter-orientiert</option><option>Pragmatisch / variabel</option>
+              </select>
+            </div>
+            <div>
+              <label>Aufbauart</label>
+              <select id="buildupStyle">
+                <option>Kurzer Aufbau von hinten</option><option>Langer Ball in die Spitze</option>
+                <option>Flügelorientiert</option><option>Durch die Mitte</option>
+              </select>
+            </div>
+          </div>
+          <label>Angriffsspiel — Schlüsselpunkte</label>
+          <ul class="bullet-list" id="attackingPoints"></ul>
+          <button class="add-btn" onclick="addBullet('attackingPoints','var(--teal)')">+ Punkt hinzufügen</button>
+          <div class="divider"></div>
+          <label>Defensivspiel — Schlüsselpunkte</label>
+          <ul class="bullet-list" id="defensivePoints"></ul>
+          <button class="add-btn" onclick="addBullet('defensivePoints','var(--blue)')">+ Punkt hinzufügen</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card" id="card-ourstd">
+          <div class="card-title">
+            <div class="dot" style="background:var(--yellow)"></div>Eigene Standards ⚽
+            <span class="spacer"></span>
+            <button class="skip-btn" onclick="toggleSkip('card-ourstd')">Heute nicht</button>
+          </div>
+          <div class="card-body">
+            <ul class="bullet-list" id="ourStandards"></ul>
+            <button class="add-btn" onclick="addBullet('ourStandards','var(--yellow)')">+ Hinzufügen</button>
+          </div>
+        </div>
+        <div class="card" id="card-oppstd">
+          <div class="card-title">
+            <div class="dot" style="background:var(--red)"></div>Gegnerische Standards ⚠️
+            <span class="spacer"></span>
+            <button class="skip-btn" onclick="toggleSkip('card-oppstd')">Heute nicht</button>
+          </div>
+          <div class="card-body">
+            <ul class="bullet-list" id="opponentStandards"></ul>
+            <button class="add-btn" onclick="addBullet('opponentStandards','var(--red)')">+ Hinzufügen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BLOCK 3: MOTIVATION ── -->
+    <div class="section" id="motivation">
+      <div class="section-header">
+        <div class="num" style="background:#2e1a2e;color:var(--purple);">3</div>
+        <h2>Motivation & Abschluss</h2><div class="accent-line"></div>
+      </div>
+
+      <div class="card" id="card-motto">
+        <div class="card-title">
+          <div class="dot" style="background:var(--yellow)"></div>Motto / Fokus-Wort 🔥
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-motto')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <input type="text" id="matchMotto" placeholder='z.B. "Kompakt", "Kämpfen", "Für jeden Mann"' style="font-size:1.1rem;font-weight:600;">
+        </div>
+      </div>
+
+      <div class="card" id="card-speech">
+        <div class="card-title">
+          <div class="dot" style="background:var(--blue)"></div>Trainer-Ansprache 🎙️
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-speech')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <textarea id="coachSpeech" rows="5" placeholder="Kurze, motivierende Ansprache..."></textarea>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card" id="card-strengths">
+          <div class="card-title">
+            <div class="dot" style="background:var(--green)"></div>Unsere Stärken heute 💪
+            <span class="spacer"></span>
+            <button class="skip-btn" onclick="toggleSkip('card-strengths')">Heute nicht</button>
+          </div>
+          <div class="card-body">
+            <ul class="bullet-list" id="ourStrengths"></ul>
+            <button class="add-btn" onclick="addBullet('ourStrengths','var(--green)')">+ Hinzufügen</button>
+          </div>
+        </div>
+        <div class="card" id="card-goals">
+          <div class="card-title">
+            <div class="dot" style="background:var(--orange)"></div>Ziele für heute 🏆
+            <span class="spacer"></span>
+            <button class="skip-btn" onclick="toggleSkip('card-goals')">Heute nicht</button>
+          </div>
+          <div class="card-body">
+            <ul class="bullet-list" id="matchGoals"></ul>
+            <button class="add-btn" onclick="addBullet('matchGoals','var(--orange)')">+ Ziel hinzufügen</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="card-ritual">
+        <div class="card-title">
+          <div class="dot" style="background:var(--yellow)"></div>Teamritual zum Abschluss 🤝
+          <span class="spacer"></span>
+          <button class="skip-btn" onclick="toggleSkip('card-ritual')">Heute nicht</button>
+        </div>
+        <div class="card-body">
+          <input type="text" id="teamRitual" placeholder="z.B. Kreis → Kapitän spricht → Schlachtruf → Raus aufs Feld!">
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-row no-print" style="justify-content:flex-end;padding:16px 0 32px;">
+      <button class="btn btn-secondary" onclick="saveData()">💾 Speichern</button>
+      <button class="btn btn-blue" onclick="exportPDF()" style="font-size:0.95rem;padding:10px 28px;">📄 PDF / Drucken exportieren</button>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── Formations ───────────────────────────────────────────────────────────────
+const FORMATIONS = {
+  '4-3-3': [
+    {id:'tw',  abbr:'TW',  name:'Torwart',              x:.50, y:.91},
+    {id:'lv',  abbr:'LV',  name:'Linker Verteidiger',   x:.12, y:.74},
+    {id:'ivl', abbr:'IVL', name:'Innenverteidiger L',   x:.36, y:.74},
+    {id:'ivr', abbr:'IVR', name:'Innenverteidiger R',   x:.64, y:.74},
+    {id:'rv',  abbr:'RV',  name:'Rechter Verteidiger',  x:.88, y:.74},
+    {id:'lm',  abbr:'LM',  name:'Linkes Mittelfeld',    x:.20, y:.52},
+    {id:'zm',  abbr:'ZM',  name:'Zentrales Mittelfeld', x:.50, y:.52},
+    {id:'rm',  abbr:'RM',  name:'Rechtes Mittelfeld',   x:.80, y:.52},
+    {id:'la',  abbr:'LA',  name:'Linker Außen',         x:.12, y:.28},
+    {id:'st',  abbr:'ST',  name:'Stürmer',              x:.50, y:.28},
+    {id:'ra',  abbr:'RA',  name:'Rechter Außen',        x:.88, y:.28},
+  ],
+  '4-4-2': [
+    {id:'tw',  abbr:'TW',  name:'Torwart',              x:.50, y:.91},
+    {id:'lv',  abbr:'LV',  name:'Linker Verteidiger',   x:.12, y:.74},
+    {id:'ivl', abbr:'IVL', name:'Innenverteidiger L',   x:.36, y:.74},
+    {id:'ivr', abbr:'IVR', name:'Innenverteidiger R',   x:.64, y:.74},
+    {id:'rv',  abbr:'RV',  name:'Rechter Verteidiger',  x:.88, y:.74},
+    {id:'la',  abbr:'LA',  name:'Linkes Mittelfeld',    x:.12, y:.52},
+    {id:'lzm', abbr:'LZM', name:'Linkes Zentr. MF',    x:.38, y:.52},
+    {id:'rzm', abbr:'RZM', name:'Rechtes Zentr. MF',   x:.62, y:.52},
+    {id:'ra',  abbr:'RA',  name:'Rechtes Mittelfeld',   x:.88, y:.52},
+    {id:'ls',  abbr:'LS',  name:'Linker Stürmer',       x:.35, y:.28},
+    {id:'rs',  abbr:'RS',  name:'Rechter Stürmer',      x:.65, y:.28},
+  ],
+  '4-2-3-1': [
+    {id:'tw',  abbr:'TW',  name:'Torwart',              x:.50, y:.91},
+    {id:'lv',  abbr:'LV',  name:'Linker Verteidiger',   x:.12, y:.76},
+    {id:'ivl', abbr:'IVL', name:'Innenverteidiger L',   x:.36, y:.76},
+    {id:'ivr', abbr:'IVR', name:'Innenverteidiger R',   x:.64, y:.76},
+    {id:'rv',  abbr:'RV',  name:'Rechter Verteidiger',  x:.88, y:.76},
+    {id:'dml', abbr:'DML', name:'Def. Mittelfeld L',    x:.37, y:.59},
+    {id:'dmr', abbr:'DMR', name:'Def. Mittelfeld R',    x:.63, y:.59},
+    {id:'lam', abbr:'LAM', name:'Links-Offensiv',       x:.15, y:.38},
+    {id:'zam', abbr:'ZAM', name:'Zentral-Offensiv',     x:.50, y:.38},
+    {id:'ram', abbr:'RAM', name:'Rechts-Offensiv',      x:.85, y:.38},
+    {id:'st',  abbr:'ST',  name:'Stürmer',              x:.50, y:.18},
+  ],
+  '3-5-2': [
+    {id:'tw',  abbr:'TW',  name:'Torwart',              x:.50, y:.91},
+    {id:'li',  abbr:'LI',  name:'Linker Innenvert.',    x:.25, y:.74},
+    {id:'mi',  abbr:'MI',  name:'Mittl. Innenvert.',    x:.50, y:.74},
+    {id:'ri',  abbr:'RI',  name:'Rechter Innenvert.',   x:.75, y:.74},
+    {id:'lwb', abbr:'LWB', name:'Linker Wing-Back',     x:.07, y:.54},
+    {id:'lm',  abbr:'LM',  name:'Linkes Mittelfeld',    x:.30, y:.54},
+    {id:'zm',  abbr:'ZM',  name:'Zentrales Mittelfeld', x:.50, y:.54},
+    {id:'rm',  abbr:'RM',  name:'Rechtes Mittelfeld',   x:.70, y:.54},
+    {id:'rwb', abbr:'RWB', name:'Rechter Wing-Back',    x:.93, y:.54},
+    {id:'ls',  abbr:'LS',  name:'Linker Stürmer',       x:.35, y:.28},
+    {id:'rs',  abbr:'RS',  name:'Rechter Stürmer',      x:.65, y:.28},
+  ],
+  '4-5-1': [
+    {id:'tw',  abbr:'TW',  name:'Torwart',              x:.50, y:.91},
+    {id:'lv',  abbr:'LV',  name:'Linker Verteidiger',   x:.12, y:.74},
+    {id:'ivl', abbr:'IVL', name:'Innenverteidiger L',   x:.36, y:.74},
+    {id:'ivr', abbr:'IVR', name:'Innenverteidiger R',   x:.64, y:.74},
+    {id:'rv',  abbr:'RV',  name:'Rechter Verteidiger',  x:.88, y:.74},
+    {id:'la',  abbr:'LA',  name:'Linkes Mittelfeld',    x:.08, y:.52},
+    {id:'lzm', abbr:'LZM', name:'Linkes Zentr. MF',    x:.28, y:.52},
+    {id:'zm',  abbr:'ZM',  name:'Zentrales MF',         x:.50, y:.52},
+    {id:'rzm', abbr:'RZM', name:'Rechtes Zentr. MF',   x:.72, y:.52},
+    {id:'ra',  abbr:'RA',  name:'Rechtes Mittelfeld',   x:.92, y:.52},
+    {id:'st',  abbr:'ST',  name:'Stürmer',              x:.50, y:.26},
+  ],
+  '5-3-2': [
+    {id:'tw',  abbr:'TW',  name:'Torwart',              x:.50, y:.91},
+    {id:'lav', abbr:'LAV', name:'Linker Außenvert.',    x:.06, y:.74},
+    {id:'ilv', abbr:'ILV', name:'Links-Innenvert.',     x:.28, y:.74},
+    {id:'miv', abbr:'MIV', name:'Mittl. Innenvert.',    x:.50, y:.74},
+    {id:'irv', abbr:'IRV', name:'Rechts-Innenvert.',    x:.72, y:.74},
+    {id:'rav', abbr:'RAV', name:'Rechter Außenvert.',   x:.94, y:.74},
+    {id:'lm',  abbr:'LM',  name:'Linkes Mittelfeld',    x:.25, y:.52},
+    {id:'zm',  abbr:'ZM',  name:'Zentrales Mittelfeld', x:.50, y:.52},
+    {id:'rm',  abbr:'RM',  name:'Rechtes Mittelfeld',   x:.75, y:.52},
+    {id:'ls',  abbr:'LS',  name:'Linker Stürmer',       x:.35, y:.28},
+    {id:'rs',  abbr:'RS',  name:'Rechter Stürmer',      x:.65, y:.28},
+  ],
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let pressValue = 50;
+let playerNames = {};
+let playerNumbers = {};   // posId → jersey number string
+let skippedCards = {};    // cardId → true
+let kpCount = 0, dcCount = 0;
+
+// ── Skip toggle ───────────────────────────────────────────────────────────────
+function toggleSkip(cardId) {
+  const card = document.getElementById(cardId);
+  const btn  = card.querySelector('.skip-btn');
+  if (skippedCards[cardId]) {
+    delete skippedCards[cardId];
+    card.classList.remove('skipped');
+    btn.textContent = 'Heute nicht';
+  } else {
+    skippedCards[cardId] = true;
+    card.classList.add('skipped');
+    btn.textContent = '↩ Wieder aktivieren';
+  }
+  saveData();
+}
+
+function applySkipped(data) {
+  if (!data) return;
+  Object.keys(data).forEach(id => {
+    if (data[id]) {
+      skippedCards[id] = true;
+      const card = document.getElementById(id);
+      if (card) {
+        card.classList.add('skipped');
+        const btn = card.querySelector('.skip-btn');
+        if (btn) btn.textContent = '↩ Wieder aktivieren';
+      }
+    }
+  });
+}
+
+// ── Field drawing ─────────────────────────────────────────────────────────────
+function drawField() {
+  const canvas = document.getElementById('tacticsField');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Pitch
+  ctx.fillStyle = '#1a4a1a'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#2d7a2d'; ctx.lineWidth = 1.2;
+  ctx.strokeRect(4, 4, W-8, H-8);
+  ctx.beginPath(); ctx.moveTo(4, H/2); ctx.lineTo(W-4, H/2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W/2, H/2, W*.18, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W/2, H/2, 3, 0, Math.PI*2); ctx.fillStyle = '#2d7a2d'; ctx.fill();
+  const pw = W*.6, px = (W-pw)/2;
+  ctx.strokeRect(px, 4, pw, H*.2); ctx.strokeRect(px, H-H*.2, pw, H*.2);
+  const gw = W*.34, gx = (W-gw)/2;
+  ctx.strokeRect(gx, 4, gw, H*.085); ctx.strokeRect(gx, H-H*.085, gw, H*.085);
+  ctx.fillStyle = '#2d7a2d';
+  ctx.beginPath(); ctx.arc(W/2, H*.165, 2.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(W/2, H*.835, 2.5, 0, Math.PI*2); ctx.fill();
+
+  // Pressing line
+  const pY = H - (pressValue/100)*H;
+  const g = ctx.createLinearGradient(0, pY-35, 0, pY);
+  g.addColorStop(0, 'rgba(248,81,73,0)'); g.addColorStop(1, 'rgba(248,81,73,0.16)');
+  ctx.fillStyle = g; ctx.fillRect(4, 4, W-8, pY-4);
+  ctx.strokeStyle = '#f85149'; ctx.lineWidth = 2; ctx.setLineDash([8,5]);
+  ctx.beginPath(); ctx.moveTo(4, pY); ctx.lineTo(W-4, pY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#f85149'; ctx.font = 'bold 9px Arial';
+  ctx.textAlign = 'left'; ctx.fillText('⬆ PRESSING', 8, pY - 4);
+
+  // Players
+  const formation = document.getElementById('ourFormation').value;
+  (FORMATIONS[formation] || []).forEach(pos => {
+    const cx = pos.x * W, cy = pos.y * H;
+    const name = (playerNames[pos.id] || '').trim();
+    const num  = (playerNumbers[pos.id] || '').trim();
+    const displayInCircle = num || pos.abbr;
+
+    // Circle
+    ctx.beginPath(); ctx.arc(cx, cy, 15, 0, Math.PI*2);
+    ctx.fillStyle = '#388bfd'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.8; ctx.stroke();
+
+    // Inside circle: number (bold) or abbr
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (num) {
+      ctx.font = 'bold 11px Arial';
+      ctx.fillText(num, cx, cy);
+    } else {
+      ctx.font = 'bold 7px Arial';
+      ctx.fillText(pos.abbr, cx, cy);
+    }
+
+    // Abbr tag below circle (only when number is shown)
+    if (num) {
+      ctx.fillStyle = 'rgba(56,139,253,0.85)';
+      ctx.font = 'bold 7px Arial';
+      const abbrW = ctx.measureText(pos.abbr).width + 6;
+      ctx.beginPath(); ctx.roundRect(cx - abbrW/2, cy+16, abbrW, 10, 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 7px Arial';
+      ctx.fillText(pos.abbr, cx, cy+21);
+    }
+
+    // Name pill
+    if (name) {
+      ctx.font = '8px Arial';
+      const nw = ctx.measureText(name).width + 8;
+      const ny = num ? cy + 30 : cy + 18;
+      ctx.fillStyle = 'rgba(13,17,23,0.88)';
+      ctx.beginPath(); ctx.roundRect(cx-nw/2, ny, nw, 13, 3); ctx.fill();
+      ctx.fillStyle = '#c9d1d9'; ctx.fillText(name, cx, ny+6.5);
+    }
+  });
+
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(139,148,158,0.45)'; ctx.font = '8px Arial'; ctx.textAlign = 'center';
+  ctx.fillText('ANGRIFF', W/2, 16);
+  ctx.fillText('MITTELLINIE', W/2, H/2-6);
+  ctx.fillText('ABWEHR', W/2, H-8);
+  ctx.textAlign = 'left';
+}
+
+// ── Position inputs ───────────────────────────────────────────────────────────
+function updateField() {
+  const formation = document.getElementById('ourFormation').value;
+  const positions = FORMATIONS[formation] || [];
+  const container = document.getElementById('positionInputs');
+  container.innerHTML = '';
+
+  positions.forEach(pos => {
+    const wrap = document.createElement('div');
+    wrap.className = 'pos-input-wrap';
+    wrap.innerHTML = `
+      <span class="pos-label">${pos.abbr} — ${pos.name}</span>
+      <div class="pos-input-row">
+        <input type="number" class="pos-nr" placeholder="Nr" min="1" max="99"
+          value="${playerNumbers[pos.id] || ''}"
+          oninput="playerNumbers['${pos.id}']=this.value;drawField()"
+          id="nr_${pos.id}" title="Trikotnummer">
+        <input type="text" class="pos-name" placeholder="Spielername"
+          value="${playerNames[pos.id] || ''}"
+          oninput="playerNames['${pos.id}']=this.value;drawField()"
+          id="pos_${pos.id}">
+      </div>
+    `;
+    container.appendChild(wrap);
+  });
+
+  drawField();
+}
+
+// ── Press line ────────────────────────────────────────────────────────────────
+function updatePressLine(val) {
+  pressValue = parseInt(val);
+  const z = pressValue > 65 ? 'high' : pressValue >= 35 ? 'mid' : 'low';
+  const labels = { high:'Hohes Pressing (Gegnerhälfte)', mid:'Mittelfeldpressing (ab Mittellinie)', low:'Tiefes Pressing (Eigene Hälfte)' };
+  const hints  = { high:'Gegner wird in seiner eigenen Hälfte unter Druck gesetzt.', mid:'Gegner wird ab der Mittellinie unter Druck gesetzt.', low:'Wir verteidigen tief in der eigenen Hälfte.' };
+  document.getElementById('pressLabel').textContent = `Pressinglinie: ${labels[z]}`;
+  document.getElementById('pressHint').textContent = hints[z];
+  document.querySelectorAll('.press-zone-item').forEach((el,i) => el.classList.toggle('active', i==={high:0,mid:1,low:2}[z]));
+  drawField();
+}
+function setPressingZone(v) { document.getElementById('pressSlider').value=v; updatePressLine(v); }
+
+// ── Bullet lists ──────────────────────────────────────────────────────────────
+function addBullet(listId, dotColor, value='') {
+  const li = document.createElement('li');
+  li.className = 'bullet-item';
+  li.innerHTML = `<div class="bullet-dot" style="background:${dotColor}"></div>
+    <input type="text" placeholder="Punkt eingeben..." value="${escHtml(value)}">
+    <button class="remove-btn" onclick="this.closest('li').remove()">✕</button>`;
+  document.getElementById(listId).appendChild(li);
+  if (!value) li.querySelector('input').focus();
+}
+function getBullets(id) {
+  return [...document.querySelectorAll(`#${id} .bullet-item input`)].map(i=>i.value.trim()).filter(Boolean);
+}
+
+// ── Key players ───────────────────────────────────────────────────────────────
+function addKeyPlayer(nr='', name='', pos='', note='') {
+  const id = kpCount++;
+  const row = document.createElement('div');
+  row.className = 'kp-row'; row.id = `kp_${id}`;
+  row.innerHTML = `
+    <input type="number" placeholder="Nr" min="1" max="99" value="${nr}" style="text-align:center;padding:6px 4px;">
+    <input type="text" placeholder="Spielername" value="${escHtml(name)}">
+    <input type="text" placeholder="Pos" value="${escHtml(pos)}">
+    <input type="text" placeholder="Gefahr / Besonderheit" value="${escHtml(note)}">
+    <button class="btn btn-danger" onclick="document.getElementById('kp_${id}').remove()" style="padding:6px 10px;">✕</button>`;
+  document.getElementById('keyPlayersList').appendChild(row);
+}
+function getKeyPlayers() {
+  return [...document.querySelectorAll('.kp-row')].map(row => {
+    const inp = row.querySelectorAll('input');
+    return {nr:inp[0].value, name:inp[1].value, pos:inp[2].value, note:inp[3].value};
+  }).filter(p=>p.name);
+}
+
+// ── Direct comparison ─────────────────────────────────────────────────────────
+function addDirectComp(date='',score='',loc='Heim',result='W',note='') {
+  const id = dcCount++;
+  const row = document.createElement('div');
+  row.className = 'dc-row'; row.id = `dc_${id}`;
+  const resBg = result==='W'?'#1a3a1f':result==='D'?'#3a2e1a':'#3a1a1a';
+  const resCol= result==='W'?'#3fb950':result==='D'?'#e3b341':'#f85149';
+  row.innerHTML = `
+    <input type="date" value="${date}">
+    <input type="text" placeholder="2:1" value="${escHtml(score)}" style="text-align:center;">
+    <select><option ${loc==='Heim'?'selected':''}>Heim</option><option ${loc==='Auswärts'?'selected':''}>Auswärts</option></select>
+    <select style="background:${resBg};color:${resCol}">
+      <option value="W" ${result==='W'?'selected':''}>Sieg ✅</option>
+      <option value="D" ${result==='D'?'selected':''}>Unentschieden</option>
+      <option value="L" ${result==='L'?'selected':''}>Niederlage ❌</option>
+    </select>
+    <input type="text" placeholder="Notiz..." value="${escHtml(note)}">
+    <button class="btn btn-danger" onclick="document.getElementById('dc_${id}').remove()" style="padding:6px 10px;">✕</button>`;
+  document.getElementById('directCompList').appendChild(row);
+  const sel = row.querySelectorAll('select')[1];
+  sel.addEventListener('change', function() {
+    this.style.background = this.value==='W'?'#1a3a1f':this.value==='D'?'#3a2e1a':'#3a1a1a';
+    this.style.color = this.value==='W'?'#3fb950':this.value==='D'?'#e3b341':'#f85149';
+  });
+}
+function getDirectComp() {
+  return [...document.querySelectorAll('.dc-row')].map(row => {
+    const inp = row.querySelectorAll('input'), sel = row.querySelectorAll('select');
+    return {date:inp[0].value, score:inp[1].value, loc:sel[0].value, result:sel[1].value, note:inp[2].value};
+  }).filter(d=>d.score);
+}
+
+// ── Bench players ─────────────────────────────────────────────────────────────
+function addBenchPlayer(nr='', name='') {
+  const div = document.createElement('div');
+  div.className = 'bench-player';
+  div.innerHTML = `
+    <input type="number" class="bench-nr-input" placeholder="Nr" min="1" max="99" value="${nr}" title="Trikotnummer">
+    <span class="bench-sep">·</span>
+    <input type="text" class="name-input" placeholder="Spielername" value="${escHtml(name)}">
+    <button class="remove-btn" onclick="this.closest('.bench-player').remove()">✕</button>`;
+  document.getElementById('benchWrap').appendChild(div);
+}
+function getBenchPlayers() {
+  return [...document.querySelectorAll('.bench-player')].map(el => ({
+    nr: el.querySelector('.bench-nr-input')?.value.trim() || '',
+    name: el.querySelector('.name-input')?.value.trim() || ''
+  })).filter(p => p.name);
+}
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+function navTo(id, el) {
+  document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── Save / Load ───────────────────────────────────────────────────────────────
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+function collectData() {
+  const gv = id => (document.getElementById(id)||{}).value || '';
+  return {
+    matchDate:gv('matchDate'), opponentName:gv('opponentName'), competition:gv('competition'),
+    homeAway:gv('homeAway'), kickoff:gv('kickoff'),
+    lastOpponent:gv('lastOpponent'), lastResult:gv('lastResult'), lastDate:gv('lastDate'),
+    goodList:getBullets('goodList'), badList:getBullets('badList'),
+    keepList:getBullets('keepList'), changeList:getBullets('changeList'),
+    opponentFormation:gv('opponentFormation'), opponentStyle:gv('opponentStyle'),
+    opponentTactics:gv('opponentTactics'),
+    keyPlayers:getKeyPlayers(), directComp:getDirectComp(),
+    opponentStrengths:getBullets('opponentStrengths'),
+    opponentWeaknesses:getBullets('opponentWeaknesses'),
+    ourFormation:gv('ourFormation'),
+    playerNames, playerNumbers,
+    benchPlayers:getBenchPlayers(),
+    pressValue,
+    pressTriggers:getBullets('pressTriggers'),
+    playStyle:gv('playStyle'), buildupStyle:gv('buildupStyle'),
+    attackingPoints:getBullets('attackingPoints'),
+    defensivePoints:getBullets('defensivePoints'),
+    ourStandards:getBullets('ourStandards'),
+    opponentStandards:getBullets('opponentStandards'),
+    matchMotto:gv('matchMotto'), coachSpeech:gv('coachSpeech'),
+    ourStrengths:getBullets('ourStrengths'), matchGoals:getBullets('matchGoals'),
+    teamRitual:gv('teamRitual'),
+    skippedCards,
+  };
+}
+
+function saveData() {
+  try { localStorage.setItem('prematch_data', JSON.stringify(collectData())); showToast('💾 Gespeichert'); }
+  catch(e) { console.warn(e); }
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem('prematch_data');
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    const sv = (id,v) => { const el=document.getElementById(id); if(el&&v!=null) el.value=v; };
+
+    sv('matchDate',d.matchDate); sv('opponentName',d.opponentName);
+    sv('competition',d.competition); sv('homeAway',d.homeAway); sv('kickoff',d.kickoff);
+    sv('lastOpponent',d.lastOpponent); sv('lastResult',d.lastResult); sv('lastDate',d.lastDate);
+    sv('opponentFormation',d.opponentFormation); sv('opponentStyle',d.opponentStyle);
+    sv('opponentTactics',d.opponentTactics); sv('ourFormation',d.ourFormation||'4-3-3');
+    sv('playStyle',d.playStyle); sv('buildupStyle',d.buildupStyle);
+    sv('matchMotto',d.matchMotto); sv('coachSpeech',d.coachSpeech); sv('teamRitual',d.teamRitual);
+
+    if (d.playerNames)   playerNames   = d.playerNames;
+    if (d.playerNumbers) playerNumbers = d.playerNumbers;
+
+    const lb = (id, col, arr) => (arr||[]).forEach(v => addBullet(id, col, v));
+    lb('goodList','var(--green)',d.goodList); lb('badList','var(--red)',d.badList);
+    lb('keepList','var(--teal)',d.keepList); lb('changeList','var(--yellow)',d.changeList);
+    lb('opponentStrengths','var(--red)',d.opponentStrengths);
+    lb('opponentWeaknesses','var(--green)',d.opponentWeaknesses);
+    lb('pressTriggers','var(--yellow)',d.pressTriggers);
+    lb('attackingPoints','var(--teal)',d.attackingPoints);
+    lb('defensivePoints','var(--blue)',d.defensivePoints);
+    lb('ourStandards','var(--yellow)',d.ourStandards);
+    lb('opponentStandards','var(--red)',d.opponentStandards);
+    lb('ourStrengths','var(--green)',d.ourStrengths);
+    lb('matchGoals','var(--orange)',d.matchGoals);
+
+    (d.keyPlayers||[]).forEach(p => addKeyPlayer(p.nr||'', p.name, p.pos, p.note));
+    (d.directComp||[]).forEach(c => addDirectComp(c.date,c.score,c.loc,c.result,c.note));
+    (d.benchPlayers||[]).forEach(p => {
+      if (typeof p === 'string') addBenchPlayer('', p);
+      else addBenchPlayer(p.nr||'', p.name||'');
+    });
+
+    if (d.pressValue != null) { pressValue=d.pressValue; document.getElementById('pressSlider').value=pressValue; updatePressLine(pressValue); }
+    if (d.skippedCards) applySkipped(d.skippedCards);
+
+    return true;
+  } catch(e) { console.warn('Load error:', e); return false; }
+}
+
+function clearAll() {
+  if (!confirm('Alle Daten für dieses Spiel löschen?')) return;
+  localStorage.removeItem('prematch_data');
+  location.reload();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1db954;color:#000;font-weight:700;padding:10px 20px;border-radius:8px;z-index:9999;font-size:0.88rem;pointer-events:none;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2000);
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+function exportPDF() { saveData(); window.print(); }
+
+// ── Auto-save ─────────────────────────────────────────────────────────────────
+document.addEventListener('input', () => { clearTimeout(window._as); window._as = setTimeout(saveData, 1200); });
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const loaded = loadData();
+  if (!loaded) {
+    // Defaults for new session
+    addBullet('goodList','var(--green)');
+    addBullet('badList','var(--red)');
+    addBullet('keepList','var(--teal)');
+    addBullet('changeList','var(--yellow)');
+    addBullet('pressTriggers','var(--yellow)','Fehlpass des Gegners');
+    addBullet('pressTriggers','var(--yellow)','Rückpass zum Torwart');
+    addBullet('attackingPoints','var(--teal)');
+    addBullet('defensivePoints','var(--blue)');
+    addKeyPlayer('','','','');
+    addDirectComp();
+    addBenchPlayer();
+  }
+  updateField();
+  updatePressLine(pressValue);
+});
+</script>
+</body>
+</html>
