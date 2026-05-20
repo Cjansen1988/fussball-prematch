@@ -124,7 +124,7 @@ select option { background: var(--bg2); }
 .btn-blue:hover { background: #4d9fff; }
 
 /* ── Game info ── */
-.game-info-strip { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 16px 20px; margin-bottom: 28px; display: grid; grid-template-columns: repeat(5, 1fr) 80px 100px; gap: 14px; }
+.game-info-strip { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 16px 20px; margin-bottom: 28px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
 
 /* ── Key players ── */
 .kp-row { display: grid; grid-template-columns: 50px 1fr 70px 55px 55px 1.6fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
@@ -177,22 +177,130 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18p
 
 /* ── Print ── */
 @media print {
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  body { background: #fff !important; color: #111 !important; font-size: 11pt; }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  body { background: #fff !important; color: #111 !important; font-size: 10pt; }
   .app-header, .sidebar, .no-print { display: none !important; }
   .container { display: block; }
   .main { padding: 0; max-width: 100%; }
-  .section { page-break-inside: avoid; margin-bottom: 16pt; }
-  .card { border: 1px solid #ccc !important; background: #f8f8f8 !important; }
+
+  /* Sections */
+  .section { page-break-inside: avoid; margin-bottom: 14pt; }
+  .card {
+    border: 1px solid #ccc !important; background: #f9f9f9 !important;
+    padding: 10px 12px !important; margin-bottom: 8px !important;
+    page-break-inside: avoid;
+  }
   .card.skipped { display: none !important; }
-  .section-header { border-bottom: 2pt solid #333 !important; }
-  .section-header h2 { color: #000 !important; }
-  input, textarea, select { border: none !important; background: transparent !important; color: #000 !important; padding: 0 !important; }
-  .add-btn, .remove-btn, .skip-btn, .btn, .bench-player .remove-btn { display: none !important; }
-  .game-info-strip { background: #f0f0f0 !important; border: 1px solid #ccc !important; }
-  .field-controls { max-height: none !important; overflow: visible !important; }
-  .pos-nr { color: #000 !important; }
-  .bench-nr-input { color: #000 !important; border-bottom: none !important; }
+  .section-header { border-bottom: 2pt solid #333 !important; margin-bottom: 10px !important; }
+  .section-header h2 { color: #000 !important; font-size: 11pt !important; }
+  .section-header .num { background: #eee !important; color: #333 !important; }
+
+  /* Inputs, textareas, selects: become plain readable text */
+  input, textarea, select {
+    border: none !important;
+    border-bottom: 1px dotted #bbb !important;
+    background: transparent !important;
+    color: #111 !important;
+    padding: 1px 0 !important;
+    font-size: 9.5pt !important;
+    height: auto !important;
+    min-height: 0 !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+  }
+  textarea {
+    resize: none !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: block !important;
+  }
+  /* Remove bottom border for purely decorative / computed fields */
+  input[readonly] { border-bottom: none !important; color: #555 !important; }
+
+  /* Hide interactive controls */
+  .add-btn, .remove-btn, .skip-btn, .btn { display: none !important; }
+
+  /* Game info strip */
+  .game-info-strip {
+    background: #f0f0f0 !important; border: 1px solid #ccc !important;
+    padding: 10px 14px !important; gap: 10px !important;
+  }
+  .game-info-strip label { font-size: 7.5pt !important; color: #666 !important; }
+  .game-info-strip input, .game-info-strip select {
+    font-size: 9.5pt !important; font-weight: 600 !important;
+    border-bottom: none !important;
+  }
+
+  /* Bullet lists */
+  .bullet-list { padding: 0 !important; }
+  .bullet-item { margin-bottom: 4px !important; }
+  .bullet-item input { font-size: 9.5pt !important; border-bottom: none !important; }
+
+  /* Key players grid — compress to fit */
+  .kp-row {
+    grid-template-columns: 38px 1fr 56px 42px 42px 1.4fr !important;
+    font-size: 8.5pt !important; gap: 5px !important;
+    border-bottom: 1px solid #e8e8e8; padding-bottom: 3px;
+  }
+  .kp-row input { font-size: 8.5pt !important; }
+
+  /* Direct comparison & recent form rows */
+  .dc-row, .orf-row {
+    font-size: 8.5pt !important; gap: 5px !important;
+    border-bottom: 1px solid #e8e8e8; padding-bottom: 3px;
+  }
+  .dc-row { grid-template-columns: 90px 60px 60px 70px 1fr !important; }
+  .orf-row { grid-template-columns: 90px 1fr 70px 70px !important; }
+  .dc-row input, .dc-row select, .orf-row input, .orf-row select {
+    font-size: 8.5pt !important;
+  }
+
+  /* Bench players */
+  .bench-wrap { gap: 6px !important; }
+  .bench-player {
+    background: #f0f0f0 !important; border: 1px solid #ddd !important;
+    padding: 3px 7px !important; font-size: 8.5pt !important;
+  }
+  .bench-nr-input, .bench-player .name-input, .bench-player .note-input {
+    color: #111 !important; border: none !important;
+    font-size: 8.5pt !important; background: transparent !important;
+  }
+
+  /* Tactics field */
+  .field-controls { max-height: none !important; }
+  .pos-input-wrap { margin-bottom: 4px !important; }
+  .pos-label { font-size: 7pt !important; color: #666 !important; }
+  .pos-nr, .pos-name { font-size: 8.5pt !important; border-bottom: 1px dotted #bbb !important; }
+  .pos-note { font-size: 7.5pt !important; border-bottom: none !important; color: #555 !important; }
+
+  /* Grid layouts */
+  .grid-2, .grid-3 { gap: 10px !important; }
+  label { font-size: 7.5pt !important; color: #666 !important; margin-bottom: 2px !important; }
+
+  /* Card titles */
+  .card-title {
+    font-size: 7pt !important; margin-bottom: 8px !important;
+    color: #444 !important; letter-spacing: 0.04em !important;
+  }
+  .card-title .dot { display: none !important; }
+
+  /* Pressing */
+  .press-zones, input[type="range"] { display: none !important; }
+  .pressing-label, .press-zone-item { font-size: 9pt !important; color: #111 !important; }
+  #pressLabel { font-size: 9.5pt !important; font-weight: 600 !important; }
+  #pressHint { font-size: 8.5pt !important; color: #555 !important; }
+
+  /* Canvas */
+  #tacticsField { max-width: 240px !important; }
+  .field-wrap { gap: 12px !important; }
 }
 </style>
 </head>
@@ -238,8 +346,6 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18p
         <div><label>Wettbewerb</label><input type="text" id="competition" placeholder="z.B. Kreisliga A"></div>
         <div><label>Heim / Auswärts</label><select id="homeAway"><option>Heim</option><option>Auswärts</option></select></div>
         <div><label>Anstoßzeit</label><input type="text" id="kickoff" placeholder="15:30 Uhr"></div>
-        <div><label>Platz</label><input type="number" id="ourTablePos" placeholder="4" min="1" max="99" title="Unser Tabellenplatz" style="text-align:center;"></div>
-        <div><label>Tor&shy;verhältnis</label><input type="text" id="ourGoalRatio" placeholder="18:12" title="Unser Torverhältnis"></div>
       </div>
     </div>
 
@@ -1111,7 +1217,6 @@ function collectData() {
   return {
     matchDate:gv('matchDate'), opponentName:gv('opponentName'), competition:gv('competition'),
     homeAway:gv('homeAway'), kickoff:gv('kickoff'),
-    ourTablePos:gv('ourTablePos'), ourGoalRatio:gv('ourGoalRatio'),
     lastOpponent:gv('lastOpponent'), lastResult:gv('lastResult'), lastDate:gv('lastDate'),
     goodList:getBullets('goodList'), badList:getBullets('badList'),
     keepList:getBullets('keepList'), changeList:getBullets('changeList'),
@@ -1155,7 +1260,6 @@ function loadData() {
 
     sv('matchDate',d.matchDate); sv('opponentName',d.opponentName);
     sv('competition',d.competition); sv('homeAway',d.homeAway); sv('kickoff',d.kickoff);
-    sv('ourTablePos',d.ourTablePos); sv('ourGoalRatio',d.ourGoalRatio);
     sv('opponentTablePos',d.opponentTablePos);
     sv('lastOpponent',d.lastOpponent); sv('lastResult',d.lastResult); sv('lastDate',d.lastDate);
     sv('opponentFormation',d.opponentFormation); sv('opponentStyle',d.opponentStyle);
